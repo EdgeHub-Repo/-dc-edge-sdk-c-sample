@@ -11,12 +11,199 @@
 
 #include "DatahubEdge.h"
 
-/* create a sleep function used for demo */
-int nsleep(long miliseconds);
+// Function prototypes
+int nsleep(long milliseconds);
+void edgeAgent_Connected();
+void edgeAgent_Disconnected();
+void edgeAgent_Receive(char *cmd, char *val);
+void loadLibraryFunctions(void *handle);
+TOPTION_STRUCT setupOptions();
+TNODE_CONFIG_STRUCT setupConfig(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num);
+TEDGE_DEVICE_STATUS_STRUCT setupDeviceStatus(int device_num);
+TEDGE_DATA_STRUCT setupData(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num, int array_size);
 
+// Global variables
 bool IsConnected = false;
+void *handle;
 
-/* create event callback */
+// Function pointers for library functions
+void (*SetConnectEventPtr)(void (*callback)(void));
+void (*SetDisconnectEventPtr)(void (*callback)(void));
+void (*SetMessageReceivedPtr)(void (*callback)(char *cmd, char *val));
+void (*ConstructorPtr)(TOPTION_STRUCT option);
+void (*ConnectPtr)(void);
+void (*DisconnectPtr)(void);
+int (*UploadConfigPtr)(ActionType action, TNODE_CONFIG_STRUCT edgeConfig);
+int (*SendDataPtr)(TEDGE_DATA_STRUCT data);
+int (*SendDeviceStatusPtr)(TEDGE_DEVICE_STATUS_STRUCT data);
+
+int main(int argc, char *argv[]) {
+    handle = dlopen("./DatahubEdge.so.1.0.5", RTLD_LAZY);
+    if (!handle) {
+        fprintf(stderr, "Error loading library: %s\n", dlerror());
+        exit(1);
+    }
+
+    loadLibraryFunctions(handle);
+
+    // Set Events
+    SetConnectEventPtr(edgeAgent_Connected);
+    SetDisconnectEventPtr(edgeAgent_Disconnected);
+    SetMessageReceivedPtr(edgeAgent_Receive);
+
+    // Setup and connect
+    TOPTION_STRUCT options = setupOptions();
+    ConstructorPtr(options);
+    ConnectPtr();
+    nsleep(2000);
+
+    // Setup and upload config
+    int device_num = 3, analog_tag_num = 5, discrete_tag_num = 5, text_tag_num = 1;
+    TNODE_CONFIG_STRUCT config = setupConfig(device_num, analog_tag_num, discrete_tag_num, text_tag_num);
+    UploadConfigPtr(Create, config);
+    nsleep(2000);
+
+    // Send device status
+    TEDGE_DEVICE_STATUS_STRUCT status = setupDeviceStatus(device_num);
+    SendDeviceStatusPtr(status);
+
+    // Setup and send data
+    int array_size = 0;
+    TEDGE_DATA_STRUCT data = setupData(device_num, analog_tag_num, discrete_tag_num, text_tag_num, array_size);
+    SendDataPtr(data);
+    nsleep(2000);
+
+    // Cleanup
+    free(config.DeviceList);
+    free(status.DeviceList);
+    free(data.DeviceList);
+    dlclose(handle);
+
+    return 0;
+}
+
+void loadLibraryFunctions(void *handle) {
+    *(void **)(&SetConnectEventPtr) = dlsym(handle, "SetConnectEvent");
+    *(void **)(&SetDisconnectEventPtr) = dlsym(handle, "SetDisconnectEvent");
+    *(void **)(&SetMessageReceivedPtr) = dlsym(handle, "SetMessageReceived");
+    *(void **)(&ConstructorPtr) = dlsym(handle, "Constructor");
+    *(void **)(&ConnectPtr) = dlsym(handle, "Connect");
+    *(void **)(&DisconnectPtr) = dlsym(handle, "Disconnect");
+    *(void **)(&UploadConfigPtr) = dlsym(handle, "UploadConfig");
+    *(void **)(&SendDataPtr) = dlsym(handle, "SendData");
+    *(void **)(&SendDeviceStatusPtr) = dlsym(handle, "SendDeviceStatus");
+}
+
+TOPTION_STRUCT setupOptions() {
+    TOPTION_STRUCT options = {.AutoReconnect = true,
+                              .ReconnectInterval = 1000,
+                              .NodeId = "ENTER_NODEID_HERE",
+                              .Heartbeat = 60,
+                              .DataRecover = true,
+                              .ConnectType = DCCS,
+                              .Type = Gatway,
+                              .UseSecure = false,
+                              .OvpnPath = "",
+                              .DCCS = {.CredentialKey = "ENTER_CREDENTIAL_KEY_HERE", .APIUrl = "ENTER_API_URL_HERE"}};
+    return options;
+}
+
+TNODE_CONFIG_STRUCT setupConfig(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num) {
+    TNODE_CONFIG_STRUCT config = {0};
+    config.DeviceNumber = device_num;
+    config.DeviceList = malloc(device_num * sizeof(TDEVICE_CONFIG_STRUCT));
+
+    for (int i = 0; i < device_num; i++) {
+        TDEVICE_CONFIG_STRUCT *device = &config.DeviceList[i];
+        asprintf(&device->Id, "DeviceID_%d", i);
+        asprintf(&device->Name, "DeviceName_%d", i);
+        device->Type = "DType";
+        device->Description = "DDESC";
+        device->AnalogNumber = analog_tag_num;
+        device->DiscreteNumber = discrete_tag_num;
+        device->TextNumber = text_tag_num;
+
+        device->AnalogTagList = malloc(analog_tag_num * sizeof(TANALOG_TAG_CONFIG));
+        device->DiscreteTagList = malloc(discrete_tag_num * sizeof(TDISCRETE_TAG_CONFIG));
+        device->TextTagList = malloc(text_tag_num * sizeof(TTEXT_TAG_CONFIG));
+
+        for (int j = 0; j < analog_tag_num; j++) {
+            asprintf(&device->AnalogTagList[j].Name, "TagName_ana_%d", j);
+            device->AnalogTagList[j].Description = "description_update";
+            device->AnalogTagList[j].ReadOnly = false;
+            device->AnalogTagList[j].Deadband = 1;
+            device->AnalogTagList[j].SpanHigh = 1000;
+            device->AnalogTagList[j].SpanLow = 0;
+            device->AnalogTagList[j].ArraySize = 0;
+        }
+
+        for (int j = 0; j < discrete_tag_num; j++) {
+            asprintf(&device->DiscreteTagList[j].Name, "TagName_dis_%d", j);
+        }
+
+        for (int j = 0; j < text_tag_num; j++) {
+            asprintf(&device->TextTagList[j].Name, "TagName_txt_%d", j);
+            device->TextTagList[j].Description = "description_t";
+            device->TextTagList[j].ReadOnly = false;
+            device->TextTagList[j].ArraySize = 0;
+            device->TextTagList[j].AlarmStatus = false;
+        }
+    }
+
+    return config;
+}
+
+TEDGE_DEVICE_STATUS_STRUCT setupDeviceStatus(int device_num) {
+    TEDGE_DEVICE_STATUS_STRUCT status = {0};
+    status.DeviceNumber = device_num;
+    status.DeviceList = malloc(device_num * sizeof(TDEVICE_LIST_STRUCT));
+
+    for (int i = 0; i < device_num; i++) {
+        asprintf(&status.DeviceList[i].Id, "DeviceID_%d", i);
+        status.DeviceList[i].Status = 1;
+    }
+
+    return status;
+}
+
+TEDGE_DATA_STRUCT setupData(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num,
+                            int array_size) {
+    TEDGE_DATA_STRUCT data = {0};
+    data.DeviceNumber = device_num;
+    data.DeviceList = malloc(device_num * sizeof(TEDGE_DEVICE_STRUCT));
+
+    for (int i = 0; i < device_num; i++) {
+        TEDGE_DEVICE_STRUCT *device = &data.DeviceList[i];
+        asprintf(&device->Id, "DeviceID_%d", i);
+        device->AnalogTagNumber = analog_tag_num;
+        device->DiscreteTagNumber = discrete_tag_num;
+        device->TextTagNumber = 0;
+
+        device->AnalogTagList = malloc(analog_tag_num * sizeof(TEDGE_ANALOG_TAG_STRUCT));
+        device->DiscreteTagList = malloc(discrete_tag_num * sizeof(TEDGE_DISCRETE_TAG_STRUCT));
+
+        for (int j = 0; j < analog_tag_num; j++) {
+            asprintf(&device->AnalogTagList[j].Name, "TagName_ana_%d", j);
+            device->AnalogTagList[j].Value = 10.0;
+            device->AnalogTagList[j].ArraySize = array_size;
+            if (array_size > 0) {
+                device->AnalogTagList[j].ArrayList = malloc(array_size * sizeof(TEDGE_ANALOG_ARRAY_TAG_STRUCT));
+                for (int k = 0; k < array_size; k++) {
+                    device->AnalogTagList[j].ArrayList[k].Index = k;
+                    device->AnalogTagList[j].ArrayList[k].Value = 10.0;
+                }
+            }
+        }
+
+        for (int j = 0; j < discrete_tag_num; j++) {
+            asprintf(&device->DiscreteTagList[j].Name, "TagName_dis_%d", j);
+            device->DiscreteTagList[j].Value = 0;
+        }
+    }
+
+    return data;
+}
+
 void edgeAgent_Connected() {
     printf("Connect success\n");
     IsConnected = true;
@@ -35,246 +222,9 @@ void edgeAgent_Receive(char *cmd, char *val) {
     }
 }
 
-int main(int argc, char *argv[]) {
-    /*  load library */
-    void (*SetConnectEvent)();
-    void (*SetDisconnectEvent)();
-    void (*SetMessageReceived)();
-    void (*Constructor)(TOPTION_STRUCT);
-    void (*Connect)();
-    void (*Disconnect)();
-    int (*UploadConfig)(ActionType, TNODE_CONFIG_STRUCT);
-    int (*SendData)(TEDGE_DATA_STRUCT);
-    int (*SendDeviceStatus)(TEDGE_DEVICE_STATUS_STRUCT);
-
-    void *handle;
-    handle = dlopen("./DatahubEdge.so.1.0.5", RTLD_LAZY);
-
-    if (!handle) {
-        fputs(dlerror(), stderr);
-        exit(1);
-    }
-
-    SetConnectEvent = dlsym(handle, "SetConnectEvent");
-    SetDisconnectEvent = dlsym(handle, "SetDisconnectEvent");
-    SetMessageReceived = dlsym(handle, "SetMessageReceived");
-
-    Constructor = dlsym(handle, "Constructor");
-    Connect = dlsym(handle, "Connect");
-    Disconnect = dlsym(handle, "Disconnect");
-    UploadConfig = dlsym(handle, "UploadConfig");
-    SendData = dlsym(handle, "SendData");
-    SendDeviceStatus = dlsym(handle, "SendDeviceStatus");
-
-    /*  Set Event */
-    SetConnectEvent(edgeAgent_Connected);
-    SetDisconnectEvent(edgeAgent_Disconnected);
-    SetMessageReceived(edgeAgent_Receive);
-
-    /*  Set Construct */
-    TOPTION_STRUCT options;
-    options.AutoReconnect = true;
-    options.ReconnectInterval = 1000;
-    options.NodeId = "ENTER_NODEID_HERE";  // your node Id
-    options.Heartbeat = 60;
-    options.DataRecover = true;
-    options.ConnectType = DCCS;  // set your connect type: DCCS or MQTT
-    options.Type = Gatway;
-    options.UseSecure = false;
-    options.OvpnPath = "";
-
-    switch (options.ConnectType) {
-        case 1:                                                        // DCCS
-            options.DCCS.CredentialKey = "ENTER_CREDENTIAL_KEY_HERE";  // your CredentialKey
-            options.DCCS.APIUrl = "ENTER_API_URL_HERE";
-            break;
-
-        case 0:  // MQTT
-            options.MQTT.HostName = "ENTER_MQTT_HOST_HERE";
-            options.MQTT.Port = 1883;
-            options.MQTT.Username = "admin";
-            options.MQTT.Password = "admin";
-            options.MQTT.ProtocolType = TCP;
-            break;
-    }
-
-    /*  Set Config */
-    TNODE_CONFIG_STRUCT config;
-    ActionType action = Create;
-
-    int device_num = 3, analog_tag_num = 5, discrete_tag_num = 5, text_tag_num = 1;
-
-    PTDEVICE_CONFIG_STRUCT device = malloc(device_num * sizeof(struct DEVICE_CONFIG_STRUCT));
-    PTANALOG_TAG_CONFIG analogTag = malloc(analog_tag_num * sizeof(struct ANALOG_TAG_CONFIG));
-    PTDISCRETE_TAG_CONFIG discreteTag = malloc(discrete_tag_num * sizeof(struct DISCRETE_TAG_CONFIG));
-    PTTEXT_TAG_CONFIG textTag = malloc(text_tag_num * sizeof(struct TEXT_TAG_CONFIG));
-
-    char *simTagName = NULL;
-    char *simDevId = NULL;
-    char *simDevName = NULL;
-    char *simValue = NULL;
-
-    bool arraySample = true;
-    int array_size = 0;
-
-    for (int i = 0; i < device_num; i++) {
-        for (int j = 0; j < analog_tag_num; j++) {
-            asprintf(&simTagName, "%s_%d", "TagName_ana", j);
-            analogTag[j].Name = simTagName;
-            analogTag[j].Description = "description_update";
-            analogTag[j].ReadOnly = false;
-            analogTag[j].Deadband = 1;
-            analogTag[j].SpanHigh = 1000;
-            analogTag[j].SpanLow = 0;
-            analogTag[j].ArraySize = array_size; /* used for array tag */
-                                                 // analogTag[j].AlarmStatus = false;
-                                                 // analogTag[j].EngineerUnit = "enuit";
-                                                 // analogTag[j].IntegerDisplayFormat = 4;
-                                                 // analogTag[j].FractionDisplayFormat = 2;
-        }
-        for (int j = 0; j < discrete_tag_num; j++) {
-            asprintf(&simTagName, "%s_%d", "TagName_dis", j);
-            discreteTag[j].Name = simTagName;
-            // discreteTag[j].ArraySize = 0;    /* used for array tag */
-            // discreteTag[j].Description = "description_d";
-            // discreteTag[j].ReadOnly = false;
-            // discreteTag[j].AlarmStatus = false;
-        }
-        for (int j = 0; j < text_tag_num; j++) {
-            asprintf(&simTagName, "%s_%d", "TagName_txt", j);
-            textTag[j].Name = simTagName;
-            textTag[j].Description = "description_t";
-            textTag[j].ReadOnly = false;
-            textTag[j].ArraySize = 0;
-            textTag[j].AlarmStatus = false;
-        }
-
-        asprintf(&simDevId, "%s_%d", "DeviceID", i);
-        device[i].Id = simDevId;
-
-        asprintf(&simDevName, "%s_%d", "DeviceName", i);
-        device[i].Name = simDevName;
-        device[i].Type = "DType";
-        device[i].Description = "DDESC";
-        // device[i].RetentionPolicyName = ""; // USED_RP_NAME
-
-        device[i].AnalogNumber = analog_tag_num;
-        device[i].DiscreteNumber = discrete_tag_num;
-        device[i].TextNumber = text_tag_num;
-
-        device[i].AnalogTagList = analogTag;
-        device[i].DiscreteTagList = discreteTag;
-        device[i].TextTagList = textTag;
-    }
-
-    config.DeviceNumber = device_num;
-    config.DeviceList = device;
-
-    /* Set Device Status */
-    TEDGE_DEVICE_STATUS_STRUCT status;
-    status.DeviceNumber = device_num;
-
-    PTDEVICE_LIST_STRUCT dev_list = malloc(device_num * sizeof(struct DEVICE_LIST_STRUCT));
-    for (int i = 0; i < device_num; i++) {
-        asprintf(&simDevId, "%s_%d", "DeviceID", i);
-        dev_list[i].Id = simDevId;
-        dev_list[i].Status = 1;
-    }
-
-    status.DeviceList = dev_list;
-
-    /* Set Data Content */
-    TEDGE_DATA_STRUCT data;
-    PTEDGE_DEVICE_STRUCT data_device = malloc(device_num * sizeof(struct EDGE_DEVICE_STRUCT));
-    PTEDGE_ANALOG_TAG_STRUCT analog_data_tag = malloc(analog_tag_num * sizeof(struct EDGE_ANALOG_TAG_STRUCT));
-    PTEDGE_DISCRETE_TAG_STRUCT discrete_data_tag = malloc(discrete_tag_num * sizeof(struct EDGE_DISCRETE_TAG_STRUCT));
-    PTEDGE_TEXT_TAG_STRUCT text_data_tag = malloc(text_tag_num * sizeof(struct EDGE_TEXT_TAG_STRUCT));
-    PTEDG_ANALOG_ARRAY_TAG_STRUCT analog_data_array_tag =
-        malloc(array_size * sizeof(struct EDGE_ANALOG_ARRAY_TAG_STRUCT));
-
-    /* Use SDK API */
-    Constructor(options);
-    Connect();
-    nsleep(2000);
-
-    UploadConfig(action, config);
-    nsleep(2000);
-    SendDeviceStatus(status);
-
-    double analog_sim_data = 10;
-    unsigned int discrete_sim_data = 0;
-    char *text_sim_data = "iamtest";
-
-    for (int i = 0; i < device_num; i++) {
-        for (int j = 0; j < analog_tag_num; j++) {
-            asprintf(&simTagName, "%s_%d", "TagName_ana", j);
-            analog_data_tag[j].Name = simTagName;
-            analog_data_tag[j].Value = analog_sim_data;
-            /* array tag data */
-            for (int k = 0; k < array_size; k++) {
-                analog_data_array_tag[k].Index = k;
-                analog_data_array_tag[k].Value = analog_sim_data;
-            }
-            analog_data_tag[j].ArraySize = array_size;
-            analog_data_tag[j].ArrayList = analog_data_array_tag;
-        }
-
-        for (int j = 0; j < discrete_tag_num; j++) {
-            asprintf(&simTagName, "%s_%d", "TagName_dis", j);
-            discrete_data_tag[j].Name = simTagName;
-            discrete_data_tag[j].Value = discrete_sim_data;
-            /* array tag data */
-            // for(int k = 0; k< array_size; k++){
-            //     analog_data_array_tag[k].Index = k;
-            //     analog_data_array_tag[k].Value = value;
-            // }
-            // analog_data_tag[j].ArraySize = array_size;
-            // analog_data_tag[j].ArrayList = analog_data_array_tag;
-        }
-        data_device[i].AnalogTagNumber = analog_tag_num;
-        data_device[i].AnalogTagList = analog_data_tag;
-
-        data_device[i].DiscreteTagNumber = discrete_tag_num;
-        data_device[i].DiscreteTagList = discrete_data_tag;
-
-        data_device[i].TextTagNumber = 0;
-
-        asprintf(&simDevId, "%s_%d", "DeviceID", i);
-        data_device[i].Id = simDevId;
-    }
-    data.DeviceNumber = device_num;
-    data.DeviceList = data_device;
-    // data.Time = "2020-04-21T09:47:03.633Z";  //%Y-%m-%dT%H:%M:%S.MSZ
-
-    SendData(data);
-    nsleep(2000);
-
-    /* release */
-    free(device);
-    free(analogTag);
-    free(discreteTag);
-    free(textTag);
-
-    free(simTagName);
-    free(simDevId);
-    free(simDevName);
-    free(simValue);
-
-    dlclose(handle);
-
-    return 0;
-}
-
-/* create a sleep function used for demo */
-int nsleep(long miliseconds) {
+int nsleep(long milliseconds) {
     struct timespec req, rem;
-
-    if (miliseconds > 999) {
-        req.tv_sec = (int)(miliseconds / 1000);                            /* Must be Non-Negative */
-        req.tv_nsec = (miliseconds - ((long)req.tv_sec * 1000)) * 1000000; /* Must be in range of 0 to 999999999 */
-    } else {
-        req.tv_sec = 0;                      /* Must be Non-Negative */
-        req.tv_nsec = miliseconds * 1000000; /* Must be in range of 0 to 999999999 */
-    }
+    req.tv_sec = milliseconds / 1000;
+    req.tv_nsec = (milliseconds % 1000) * 1000000;
     return nanosleep(&req, &rem);
 }
