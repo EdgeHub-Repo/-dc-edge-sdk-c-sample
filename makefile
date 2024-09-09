@@ -2,7 +2,7 @@
 
 all: openvpn build
 
-build: DatahubEdge.so.1.0.5
+build: EdgeHubEdge.so.1.0.5
 	gcc sample.c -ldl -g -o sample -std=c99
 
 cJSON.o: cJSON.c

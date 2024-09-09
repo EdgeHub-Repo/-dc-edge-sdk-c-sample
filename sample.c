@@ -9,7 +9,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "DatahubEdge.h"
+#include "EdgeHubEdge.h"
 
 // Function prototypes
 int nsleep(long milliseconds);
@@ -38,7 +38,7 @@ int (*SendDataPtr)(TEDGE_DATA_STRUCT data);
 int (*SendDeviceStatusPtr)(TEDGE_DEVICE_STATUS_STRUCT data);
 
 int main(int argc, char *argv[]) {
-    handle = dlopen("./DatahubEdge.so.1.0.5", RTLD_LAZY);
+    handle = dlopen("./EdgeHubEdge.so.1.0.5", RTLD_LAZY);
     if (!handle) {
         fprintf(stderr, "Error loading library: %s\n", dlerror());
         exit(1);
@@ -97,14 +97,15 @@ void loadLibraryFunctions(void *handle) {
 TOPTION_STRUCT setupOptions() {
     TOPTION_STRUCT options = {.AutoReconnect = true,
                               .ReconnectInterval = 1000,
-                              .NodeId = "ENTER_NODEID_HERE",
+                              .NodeId = "e58192e0-6420-11ef-a616-6fad91acf168",
                               .Heartbeat = 60,
                               .DataRecover = true,
                               .ConnectType = DCCS,
                               .Type = Gatway,
                               .UseSecure = false,
                               .OvpnPath = "",
-                              .DCCS = {.CredentialKey = "ENTER_CREDENTIAL_KEY_HERE", .APIUrl = "ENTER_API_URL_HERE"}};
+                              .DCCS = {.CredentialKey = "132431dfe90de02abefc01806a46f68s",
+                                       .APIUrl = "http://api-dccs-ensaas.isghpc.wise-paas.com/"}};
     return options;
 }
 
