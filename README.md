@@ -1,12 +1,12 @@
 # EdgeSync360 EdgeHub C SDK Example
 
-This C application demonstrates the usage of dynamic library functions and handling of events in an embedded system context. It interfaces with a shared library `DatahubEdge.so.1.0.5`, sets up event handlers, and performs actions like configuration, status updates, and data sending.
+This C application demonstrates the usage of dynamic library functions and handling of events in an embedded system context. It interfaces with a shared library `EdgeHubEdge.so.1.0.5`, sets up event handlers, and performs actions like configuration, status updates, and data sending.
 
 ## Overview
 
 The application performs the following tasks:
 
-1. Loads a shared library (`DatahubEdge.so.1.0.5`) at runtime.
+1. Loads a shared library (`EdgeHubEdge.so.1.0.5`) at runtime.
 2. Retrieves function pointers from the loaded library using `dlsym`.
 3. Sets up event handlers for connection, disconnection, and message reception.
 4. Configures options, device configurations, and device statuses.
@@ -17,7 +17,7 @@ The application performs the following tasks:
 
 To compile the `sample.c` file, use the provided `Makefile`. Follow these steps:
 
-1. Ensure the shared library `DatahubEdge.so.1.0.5` is available in the same directory as the Makefile or in a directory specified by `LD_LIBRARY_PATH`.
+1. Ensure the shared library `EdgeHubEdge.so.1.0.5` is available in the same directory as the Makefile or in a directory specified by `LD_LIBRARY_PATH`.
 
 2. Run `make` to build the project:
 
@@ -32,14 +32,14 @@ To compile the `sample.c` file, use the provided `Makefile`. Follow these steps:
 The Makefile provides the following targets:
 
 - all: Builds the project by running the openvpn and build targets.
-- build: Compiles sample.c and links it with libdl to create the sample executable. Assumes DatahubEdge.so.1.0.5 is available.
+- build: Compiles sample.c and links it with libdl to create the sample executable. Assumes EdgeHubEdge.so.1.0.5 is available.
 - cJSON.o: Compiles cJSON.c into a position-independent object file cJSON.o.
 - clean: Removes generated files and directories (sample, recover.db3, and ./sample.dSYM).
 - test: Placeholder for any test-related commands.
 
 ## Usage
 
-1.Ensure the shared library DatahubEdge.so.1.0.5 is available in the same directory as the executable or in a directory specified by LD_LIBRARY_PATH.
+1.Ensure the shared library EdgeHubEdge.so.1.0.5 is available in the same directory as the executable or in a directory specified by LD_LIBRARY_PATH.
 
 2. Run the compiled executable:
    ```sh
@@ -60,7 +60,7 @@ The Makefile provides the following targets:
 
 ## Dependencies
 
-- DatahubEdge.so.1.0.5: Ensure this shared library is available and correctly linked.
+- EdgeHubEdge.so.1.0.5: Ensure this shared library is available and correctly linked.
 - cJSON.c: The Makefile assumes that cJSON.c is available for compiling cJSON.o.
 
 ## Notes
