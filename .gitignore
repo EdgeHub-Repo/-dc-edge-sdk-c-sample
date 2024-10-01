@@ -6,7 +6,6 @@ obj/
 *.o
 *.a
 *.so
-*.dylib
 *.exe
 
 # CMake specific
