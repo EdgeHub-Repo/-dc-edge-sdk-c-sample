@@ -16,7 +16,6 @@ int nsleep(long milliseconds);
 void edgeAgent_Connected();
 void edgeAgent_Disconnected();
 void edgeAgent_Receive(char *cmd, char *val);
-void loadLibraryFunctions(void *handle);
 TOPTION_STRUCT setupOptions();
 TNODE_CONFIG_STRUCT setupConfig(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num);
 TEDGE_DEVICE_STATUS_STRUCT setupDeviceStatus(int device_num);
@@ -26,54 +25,45 @@ TEDGE_DATA_STRUCT setupData(int device_num, int analog_tag_num, int discrete_tag
 bool IsConnected = false;
 void *handle;
 
-// Function pointers for library functions
-void (*SetConnectEventPtr)(void (*callback)(void));
-void (*SetDisconnectEventPtr)(void (*callback)(void));
-void (*SetMessageReceivedPtr)(void (*callback)(char *cmd, char *val));
-void (*ConstructorPtr)(TOPTION_STRUCT option);
-void (*ConnectPtr)(void);
-void (*DisconnectPtr)(void);
-int (*UploadConfigPtr)(ActionType action, TNODE_CONFIG_STRUCT edgeConfig);
-int (*SendDataPtr)(TEDGE_DATA_STRUCT data);
-int (*SendDeviceStatusPtr)(TEDGE_DEVICE_STATUS_STRUCT data);
-
 int main(int argc, char *argv[]) {
-    handle = dlopen("./EdgeHubEdge.so.1.0.5", RTLD_LAZY);
-    if (!handle) {
-        fprintf(stderr, "Error loading library: %s\n", dlerror());
-        exit(1);
-    }
+    // set events
+    printf("set events\n");
+    SetConnectEvent(edgeAgent_Connected);
+    SetDisconnectEvent(edgeAgent_Disconnected);
+    SetMessageReceived(edgeAgent_Receive);
 
-    loadLibraryFunctions(handle);
-
-    // Set Events
-    SetConnectEventPtr(edgeAgent_Connected);
-    SetDisconnectEventPtr(edgeAgent_Disconnected);
-    SetMessageReceivedPtr(edgeAgent_Receive);
-
-    // Setup and connect
+    // setup and connect
+    printf("setup and connect\n");
     TOPTION_STRUCT options = setupOptions();
-    ConstructorPtr(options);
-    ConnectPtr();
+    Constructor(options);
+    Connect();
     nsleep(2000);
 
-    // Setup and upload config
+    // upload config
+    printf("upload config\n");
     int device_num = 3, analog_tag_num = 5, discrete_tag_num = 5, text_tag_num = 1;
     TNODE_CONFIG_STRUCT config = setupConfig(device_num, analog_tag_num, discrete_tag_num, text_tag_num);
-    UploadConfigPtr(Create, config);
+    UploadConfig(Delsert, config);
     nsleep(2000);
 
-    // Send device status
+    // send device status
+    printf("send device status\n");
     TEDGE_DEVICE_STATUS_STRUCT status = setupDeviceStatus(device_num);
-    SendDeviceStatusPtr(status);
+    SendDeviceStatus(status);
 
-    // Setup and send data
+    // send data
+    printf("send data\n");
     int array_size = 0;
     TEDGE_DATA_STRUCT data = setupData(device_num, analog_tag_num, discrete_tag_num, text_tag_num, array_size);
-    SendDataPtr(data);
+    SendData(data);
     nsleep(2000);
 
+    // disconnect
+    printf("disconnect\n");
+    Disconnect();
+
     // Cleanup
+    printf("clean up\n");
     free(config.DeviceList);
     free(status.DeviceList);
     free(data.DeviceList);
@@ -82,30 +72,20 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void loadLibraryFunctions(void *handle) {
-    *(void **)(&SetConnectEventPtr) = dlsym(handle, "SetConnectEvent");
-    *(void **)(&SetDisconnectEventPtr) = dlsym(handle, "SetDisconnectEvent");
-    *(void **)(&SetMessageReceivedPtr) = dlsym(handle, "SetMessageReceived");
-    *(void **)(&ConstructorPtr) = dlsym(handle, "Constructor");
-    *(void **)(&ConnectPtr) = dlsym(handle, "Connect");
-    *(void **)(&DisconnectPtr) = dlsym(handle, "Disconnect");
-    *(void **)(&UploadConfigPtr) = dlsym(handle, "UploadConfig");
-    *(void **)(&SendDataPtr) = dlsym(handle, "SendData");
-    *(void **)(&SendDeviceStatusPtr) = dlsym(handle, "SendDeviceStatus");
-}
-
 TOPTION_STRUCT setupOptions() {
-    TOPTION_STRUCT options = {.AutoReconnect = true,
-                              .ReconnectInterval = 1000,
-                              .NodeId = "e58192e0-6420-11ef-a616-6fad91acf168",
-                              .Heartbeat = 60,
-                              .DataRecover = true,
-                              .ConnectType = DCCS,
-                              .Type = Gatway,
-                              .UseSecure = false,
-                              .OvpnPath = "",
-                              .DCCS = {.CredentialKey = "132431dfe90de02abefc01806a46f68s",
-                                       .APIUrl = "http://api-dccs-ensaas.isghpc.wise-paas.com/"}};
+    TOPTION_STRUCT options = {
+        .AutoReconnect = true,
+        .ReconnectInterval = 1000,
+        .NodeId = "def66d14-04db-46cf-bed4-5e0f068a2cc7",
+        .Heartbeat = 60,
+        .DataRecover = true,
+        .ConnectType = AzureIotHub,
+        .Type = Gatway,
+        .UseSecure = false,
+        .OvpnPath = "",
+        .AzureIotHub = {.ConnectionString =
+                            "HostName=edge365-dev.azure-devices.net;DeviceId=def66d14-04db-46cf-bed4-5e0f068a2cc7;"
+                            "SharedAccessKey=SlC8VeVQpJ4vqNFkSbcy8LVkET5tBkPAzKIJ83t3TLU="}};
     return options;
 }
 

@@ -9,6 +9,9 @@
 #include "EDGE_CONFIG.h"
 #include "EDGE_DATA.h"
 #include "EDGE_DEVICE_STATUS.h"
+#include "EDGE_EVENT.h"
+#include "messageClient.h"
+#include "string.h"
 
 // 3rd
 #include "message.h"

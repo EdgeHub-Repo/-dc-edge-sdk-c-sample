@@ -1,0 +1,42 @@
+# Build directories
+/build/
+bin/
+lib/
+obj/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# CMake specific
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+*.cmake
+*.ninja
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*.swo
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Backup files
+*~
+*.orig
+
+# Other
+*.DS_Store
+
+*.dSYM
+recover.db3

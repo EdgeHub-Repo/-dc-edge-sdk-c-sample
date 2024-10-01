@@ -1,27 +1,27 @@
 #ifndef __CONST_H__
 #define __CONST_H__
 
-const char *ConfigTopic = "/wisepaas/scada/%s/cfg";
-const char *DataTopic = "/wisepaas/scada/%s/data";
-const char *NodeConnTopic = "/wisepaas/scada/%s/conn";
-const char *DeviceConnTopic = "/wisepaas/scada/%s/%s/conn";
-const char *NodeCmdTopic = "/wisepaas/scada/%s/cmd";
-const char *DeviceCmdTopic = "/wisepaas/scada/%s/%s/cmd";
-const char *AckTopic = "/wisepaas/scada/%s/ack";
-const char *CfgAckTopic = "/wisepaas/scada/%s/cfgack";
+static const char *ConfigTopic = "/wisepaas/scada/%s/cfg";
+static const char *DataTopic = "/wisepaas/scada/%s/data";
+static const char *NodeConnTopic = "/wisepaas/scada/%s/conn";
+static const char *DeviceConnTopic = "/wisepaas/scada/%s/%s/conn";
+static const char *NodeCmdTopic = "/wisepaas/scada/%s/cmd";
+static const char *DeviceCmdTopic = "/wisepaas/scada/%s/%s/cmd";
+static const char *AckTopic = "/wisepaas/scada/%s/ack";
+static const char *CfgAckTopic = "/wisepaas/scada/%s/cfgack";
 
-const char *CreateSql = "CREATE TABLE Data (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, message TEXT NOT NULL)";
-const char *InsertSql = "INSERT INTO Data (message) VALUES('%s')";
-const char *QuerysSql = "SELECT * FROM Data LIMIT %d;";
-const char *DeleteSql = "DELETE FROM Data WHERE id IN (%s)";
+static const char *CreateSql = "CREATE TABLE Data (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, message TEXT NOT NULL)";
+static const char *InsertSql = "INSERT INTO Data (message) VALUES('%s')";
+static const char *QuerysSql = "SELECT * FROM Data LIMIT %d;";
+static const char *DeleteSql = "DELETE FROM Data WHERE id IN (%s)";
 
 // const int hbt_sec = 1;
-const int rcov_sec = 1;
-const int rcov_limit = 10;
+static const int rcov_sec = 1;
+static const int rcov_limit = 10;
 
-const char *WirteValueCommand = "WV";
-const char *WriteConfigCommand = "WC";
-char *AckConfig = "AckConfig";
+static const char *WirteValueCommand = "WV";
+static const char *WriteConfigCommand = "WC";
+static char *AckConfig = "AckConfig";
 
 // #define MAX_TOPIC 100
 

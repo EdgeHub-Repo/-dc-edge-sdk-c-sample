@@ -15,7 +15,7 @@ void HearbeatMessage(char **payload);
 
 bool ParseConnectJson(bool secure, char *pMsg, char **host, char **user, char **pwd, int *port);
 
-void ParseEventJson(char *pMsg, char **pCmd, char **pVal);
+void ParseEventJson(const char *pMsg, char **pCmd, char **pVal);
 
 int DeviceStatusMessage(TEDGE_DEVICE_STATUS_STRUCT data, char **payload);
 

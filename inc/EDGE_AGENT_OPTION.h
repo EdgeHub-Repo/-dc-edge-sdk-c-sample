@@ -8,7 +8,8 @@ typedef enum {
 
 typedef enum {
     MQTT,
-    DCCS
+    DCCS,
+    AzureIotHub,
 } ConnectType;
 
 typedef enum {
@@ -59,6 +60,10 @@ typedef struct DCCS_OPTION_STRUCT {
     char* APIUrl;
 } TDCCS_OPTION_STRUCT, *PTDCCS_OPTION_STRUCT;
 
+typedef struct AZURE_IOT_HUB_OPTION_STRUCT {
+    char* ConnectionString;
+} TAZURE_IOT_HUB_OPTIONS_STRUCT, *PTAZURE_IOT_HUB_OPTIONS_STRUCT;
+
 typedef struct OPTION_STRUCT {
     bool CacheConfig;
     bool AutoReconnect;
@@ -73,6 +78,7 @@ typedef struct OPTION_STRUCT {
     char* OvpnPath;
     TMQTT_OPTION_STRUCT MQTT;
     TDCCS_OPTION_STRUCT DCCS;
+    TAZURE_IOT_HUB_OPTIONS_STRUCT AzureIotHub;
 
 } TOPTION_STRUCT, *PTOPTION_STRUCT;
 
