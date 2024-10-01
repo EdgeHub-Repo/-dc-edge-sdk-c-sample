@@ -1,70 +1,91 @@
 # EdgeSync360 EdgeHub C SDK Example
 
-This C application demonstrates the usage of dynamic library functions and handling of events in an embedded system context. It interfaces with a shared library `EdgeHubEdge.so.1.0.5`, sets up event handlers, and performs actions like configuration, status updates, and data sending.
-
 ## Overview
 
-The application performs the following tasks:
+This project demonstrates a basic implementation of an edge agent using the EdgeSync360.EdgeHub.Edge.C.SDK. The edge agent connects to the IoT Hub, uploads device configurations, sends device status and data, and handles incoming messages. The project is implemented in C and utilizes CMake for building.
 
-1. Loads a shared library (`EdgeHubEdge.so.1.0.5`) at runtime.
-2. Retrieves function pointers from the loaded library using `dlsym`.
-3. Sets up event handlers for connection, disconnection, and message reception.
-4. Configures options, device configurations, and device statuses.
-5. Sends configuration data, device statuses, and edge data.
-6. Cleans up allocated resources and closes the library.
+## Features
 
-## Compilation
+- Connect to Azure IoT Hub
 
-To compile the `sample.c` file, use the provided `Makefile`. Follow these steps:
+- Upload device configurations
 
-1. Ensure the shared library `EdgeHubEdge.so.1.0.5` is available in the same directory as the Makefile or in a directory specified by `LD_LIBRARY_PATH`.
+- Send device status
 
-2. Run `make` to build the project:
+- Send data from devices
 
-   ```sh
-   make
-   ```
+- Handle incoming commands and acknowledgments
 
-   This will compile sample.c and link it with libdl, producing the executable sample.
+## Requirements
 
-## Makefile
+- CMake 3.10 or higher
 
-The Makefile provides the following targets:
+- C11 compatible C compiler
 
-- all: Builds the project by running the openvpn and build targets.
-- build: Compiles sample.c and links it with libdl to create the sample executable. Assumes EdgeHubEdge.so.1.0.5 is available.
-- cJSON.o: Compiles cJSON.c into a position-independent object file cJSON.o.
-- clean: Removes generated files and directories (sample, recover.db3, and ./sample.dSYM).
-- test: Placeholder for any test-related commands.
+- Azure IoT Hub account
 
-## Usage
+- Dynamic library `EdgeSync360.EdgeHub.Edge.C.SDK.1.0.2.dylib`
 
-1.Ensure the shared library EdgeHubEdge.so.1.0.5 is available in the same directory as the executable or in a directory specified by LD_LIBRARY_PATH.
+## Building the Project
 
-2. Run the compiled executable:
-   ```sh
-   ./sample
-   ```
+1. **Clone the repository (if applicable):**
 
-## Functions
+```bash
+git clone https://github.com/EdgeHub-Repo/dc-edge-sdk-c-sample.git
+cd dc-edge-sdk-c-sample
+```
 
-- int nsleep(long milliseconds);: Suspends execution for a specified number of milliseconds.
-- void edgeAgent_Connected();: Callback function called when the agent connects.
-- void edgeAgent_Disconnected();: Callback function called when the agent disconnects.
-- void edgeAgent_Receive(char *cmd, char *val);: Callback function called when a message is received.
-- void loadLibraryFunctions(void \*handle);: Loads function pointers from the shared library.
-- TOPTION_STRUCT setupOptions();: Sets up the options for the edge agent.
-- TNODE_CONFIG_STRUCT setupConfig(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num);: Sets up the device configuration.
-- TEDGE_DEVICE_STATUS_STRUCT setupDeviceStatus(int device_num);: Sets up the device status.
-- TEDGE_DATA_STRUCT setupData(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num, int array_size);: Sets up the data to be sent.
+2. **Create a build directory:**
 
-## Dependencies
+```bash
+mkdir build
+cd build
+```
 
-- EdgeHubEdge.so.1.0.5: Ensure this shared library is available and correctly linked.
-- cJSON.c: The Makefile assumes that cJSON.c is available for compiling cJSON.o.
+3. **Run CMake:**
 
-## Notes
+```bash
+cmake ..
+```
 
-- The application uses dynamic loading of library functions (dlopen and dlsym).
-- The setupConfig, setupDeviceStatus, and setupData functions allocate memory dynamically. Ensure proper deallocation of these resources to avoid memory leaks.
-- The nsleep function is used to introduce delays in the execution, which may be useful for timing-related operations.
+4. **Build the project:**
+
+```bash
+make
+```
+
+5. **Run the executable:**
+
+```bash
+./bin/sample
+```
+
+## Code Explanation
+
+### Main Functions
+
+- **`main()`** : The entry point of the program where events are set, configurations are initialized, and the connection to Azure IoT Hub is established.
+
+- **`edgeAgent_Connected()`** : Callback function for handling successful connections.
+
+- **`edgeAgent_Disconnected()`** : Callback function for handling disconnections.
+
+- **`edgeAgent_Receive(char *cmd, char *val)`** : Handles incoming messages and executes commands.
+
+### Setup Functions
+
+- **`setupOptions()`** : Initializes the connection options for the Azure IoT Hub.
+
+- **`setupConfig(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num)`** : Configures the devices with specified numbers of tags.
+
+- **`setupDeviceStatus(int device_num)`** : Sets up the initial device status.
+
+- **`setupData(int device_num, int analog_tag_num, int discrete_tag_num, int text_tag_num, int array_size)`** : Prepares the data to be sent to the IoT Hub.
+
+### Sleep Function
+
+- **`nsleep(long milliseconds)`** : A utility function for sleeping for a specified number of milliseconds.
+
+## Cleanup
+
+Ensure to properly free allocated memory and handle resource cleanup. The project includes cleanup logic at the end of the `main()` function.
